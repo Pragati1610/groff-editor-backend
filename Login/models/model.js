@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 
 const fileSchema = mongoose.Schema({
     fileId: mongoose.Schema.Types.ObjectId,
-    fileName: {type: String, required: true, default: "untitled" },
-    fileData: {type: String, default: ""},
+    fileName: { type: String, required: true, default: "untitled" },
+    fileData: { type: String, default: "" },
     timestamps: {
-        createdAt: {type: Date, require: true, default: new Date()},
-        updatedAt: {type: Date, default: new Date()}
+        createdAt: { type: Date, require: true, default: new Date() },
+        updatedAt: { type: Date, default: new Date() }
     }
 });
 

@@ -17,7 +17,7 @@ const bash = require("bash");
 // const WebSocket = require("ws");
 
 const { exec, execFile, spawn } = require("child_process");
-const { check, validationResult } = require("express-validator");
+// const { check, validationResult } = require("express-validator");
 
 // var data = "";
 const loginRoute = require("./Login/routes/login");
@@ -33,38 +33,34 @@ const port = process.env.BACKEND_PORT || 3000;
 app.use(morgan("dev"));
 app.use(express.static("public"));
 app.use(
-	bp.urlencoded({
-		extended: false,
-	})
+    bp.urlencoded({
+        extended: false,
+    })
 );
 app.use(bp.json());
 app.use(cors());
 
 app.get("/ping", (_req, res) => {
-	res.json({ Health: "Ok" });
+    res.json({ Health: "Ok" });
 });
 
-
-const axios = require('axios');
 const requestIp = require('request-ip');
 
 app.use(requestIp.mw())
-
-
 
 // mongo db
 
 mongoose.set("useCreateIndex", true);
 mongoose.connect(process.env.MONGO_URL, {
-	useNewUrlParser: true,
-	useUnifiedTopology: true,
-	useFindAndModify: false,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
 });
 
 // listen port
 
-const server = app.listen(port, function () {
-	console.log(`Server started at ${port}`);
+const server = app.listen(port, function() {
+    console.log(`Server started at ${port}`);
 });
 
 // routes
@@ -72,99 +68,95 @@ const server = app.listen(port, function () {
 app.use("/api/auth", oAuthRoute);
 app.use("/api/manauth", loginRoute);
 app.use("/api/preview", previewRoute);
-app.use("/",authTestRoute);
+app.use("/", authTestRoute);
 
 let child;
 
-var io = socket(server, {path: '/api/socket.io'});
+var io = socket(server, { path: '/api/socket.io' });
 
 io.origins("*:*");
 io.on("connection", (person) => {
-	console.log(`made socket connection : ${person.id}`);
+    console.log(`made socket connection : ${person.id}`);
 
-	person.on("cmd", async function (val){
+    person.on("cmd", async function(val) {
 
-		let val_json = JSON.parse(val);
-		let token = val_json.token;
-		let fileName = val_json.fileId;
-		let data = val_json.data;
-		// await trigger(val_json,'socket')
-		console.log(val_json);
-		let email = '';
-		try {
-	
-			jwt.verify(token, process.env.JWT_KEY, (err, user) => {
-	  		if (err) {
-	        		console.log(err)
-	    		}
-	      	  	console.log(user);
-	 	    	email = user.email;
-	    		console.log(email);
-		   });
-		} catch (err) {
-			console.log(err);
-		}
+        let val_json = JSON.parse(val);
+        let token = val_json.token;
+        let fileName = val_json.fileId;
+        let data = val_json.data;
+        // await trigger(val_json,'socket')
+        console.log(val_json);
+        let email = '';
+        try {
 
-			User.find({
-				email: email
-			}).then((doc) => {
-				if(doc.length>=1){
-					let timestamps = {
-						updatedAt: new Date(),
-					};
+            jwt.verify(token, process.env.JWT_KEY, (err, user) => {
+                if (err) {
+                    console.log(err)
+                }
+                console.log(user);
+                email = user.email;
+                console.log(email);
+            });
+        } catch (err) {
+            console.log(err);
+        }
 
-					console.log(fileName);
-					User.updateOne(
-						{
-							_id: doc._id,
-							"files.fileId": fileName,
-						},
-						{
-							$set: {
-								"files.$.fileData": data,
-								"files.$.timestamps": timestamps,
-							},
-						}
-					)
-						.exec()
-						.then((result) => {
-							console.log("File updated");
-						})
-						.catch((err) => {
-							console.log(err);
-						});
+        User.find({
+            email: email
+        }).then((doc) => {
+            if (doc.length >= 1) {
+                let timestamps = {
+                    updatedAt: new Date(),
+                };
 
-					let command = 'printf "' + data + '"';
+                console.log(fileName);
+                User.updateOne({
+                        _id: doc._id,
+                        "files.fileId": fileName,
+                    }, {
+                        $set: {
+                            "files.$.fileData": data,
+                            "files.$.timestamps": timestamps,
+                        },
+                    })
+                    .exec()
+                    .then((result) => {
+                        console.log("File updated");
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    });
 
-					child = execFile(
-			            "pdfroff",
-			            ["-i", "-ms", `--pdf-output=media/${doc._id}.pdf`],
-			            (err) => {
-			                if (err) {
-			                    console.log(err);
-			                } else {
-			                    fs.readFile(`media/${doc._id}.pdf`, "binary", (err, data) => {
-			                        if (err) {
-			                            return console.log("Error:" + err);
-			                        }
-			                        let buff = btoa(data);
-			                        person.emit("cmd", buff);
-			                    });
-			                }
-			            }
-			        );
+                let command = 'printf "' + data + '"';
 
-			        var stdinStream = new stream.Readable();
-			        stdinStream.push(data);
-			        stdinStream.push(null);
-			        stdinStream.pipe(child.stdin);
+                child = execFile(
+                    "pdfroff", ["-i", "-ms", `--pdf-output=media/${doc._id}.pdf`],
+                    (err) => {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            fs.readFile(`media/${doc._id}.pdf`, "binary", (err, data) => {
+                                if (err) {
+                                    return console.log("Error:" + err);
+                                }
+                                let buff = btoa(data);
+                                person.emit("cmd", buff);
+                            });
+                        }
+                    }
+                );
 
-				} else {
-					console.log("");
-				}		
-			}).catch(err => {
-			console.log(err)
-			});	
-		})
+                var stdinStream = new stream.Readable();
+                stdinStream.push(data);
+                stdinStream.push(null);
+                stdinStream.pipe(child.stdin);
 
-	});
+            } else {
+                console.log("");
+            }
+        }).catch(err => {
+            console.log(err)
+        });
+    })
+
+});

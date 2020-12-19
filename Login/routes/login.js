@@ -26,16 +26,16 @@ router.post("/signup", (req, res) => {
                 });
             } else {
 
-                const secret_key = process.env.SECRET_KEY;
-                const token1 = req.body.token;
-                const url = `https://www.google.com/recaptcha/api/siteverify?secret=${secret_key}&response=${token1}`;
+                // const secret_key = process.env.SECRET_KEY;
+                // const token1 = req.body.token;
+                // const url = `https://www.google.com/recaptcha/api/siteverify?secret=${secret_key}&response=${token1}`;
 
-                fetch(url, {
-                        method: 'post'
-                    })
-                    .then(response => response.json())
-                    .then(google_response => res.json({ google_response }))
-                    .catch(error => { return res.json({ error }) });
+                // fetch(url, {
+                //         method: 'post'
+                //     })
+                //     .then(response => response.json())
+                //     .then(google_response => res.json({ google_response }))
+                //     .catch(error => { return res.json({ error }) });
 
                 bcrypt.genSalt(parseInt(process.env.NUM_HASH), function(err, salt) {
                     bcrypt.hash(req.body.password, salt, function(err, hash) {
